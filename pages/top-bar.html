@@ -1,50 +1,55 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <style>
-            #links{
-                background-color: blue;
-                width: 100%;
-                border-radius: 3px;
-            }
-            #links tr th{
-                margin: 0px;
-                padding: 5px;
-                background-color: darkblue;
-                border-radius: 10px;
-                height: 20px;
-            }
-            #links tr th a{
-                padding: 5px;
-                display: block;
-                border-radius: 10px;
-                height: 20px;
-            }
-            a:link{
-                color: slategray;
-                text-decoration: none;
-            }
-            a:visited{
-                color: slategray;
-                text-decoration: none;
-            }
-            a:hover{
-                color: gray;
-                text-decoration: underline;
-                background-color: blue;
-            }
-            a:active{
-                color: lightslategray;
-            }
-        </style>
-    </head>
-    <body>
-        <h2>My Github Website</h2>
-        <table id="links">
-            <tr>
-                <th><a href="../index.html">Home</a></th>
-                <th><a href="https://github.com/NevGithub0823/CODE">My CODE Repository</a></th>
-            </tr>
-        </table>
-    </body>
+
+<head>
+    <style>
+        a:link {
+            color: slategray;
+            text-decoration: none;
+        }
+
+        a:visited {
+            color: slategray;
+            text-decoration: none;
+        }
+
+        a:hover {
+            color: gray;
+            text-decoration: none !important;
+        }
+
+        a:active {
+            color: lightslategray;
+        }
+
+        a {
+            display: inline-block;
+            padding: 7px;
+        }
+
+        .text-link {
+            vertical-align: 100%;
+        }
+
+        #top-bar {
+            top: 0%;
+            left: 0%;
+            right: 0%;
+            position: fixed;
+            width: 100%;
+            background-color: aliceblue;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="top-bar">
+        <a href="https://github.com/NevGithub0823"><img style="border-radius: 50%;" height="50px"
+                src="https://avatars.githubusercontent.com/u/68718784?s=400&u=9a1330d52167082f17425b50b0e96c2678415a87&v=4"></a>
+        <a class="text-link" href="../index.html">Nev's GitHub Website</a>
+        <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+        <a class="text-link" href="https://github.com/NevGithub0823/CODE">Main Repository</a>
+    </div>
+</body>
+
 </html>
