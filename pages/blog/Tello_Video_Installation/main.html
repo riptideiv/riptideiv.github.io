@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link rel="icon" href="pages/img/icon.png" type="image/x-icon">
+    <title>Nev's Website</title>
+    <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="topbar"></div>
+    <div id="article"></div>
+    <script>
+        $(
+            function () {
+                $("#topbar").load("../../top-bar.html");
+                $("#article").load("Tello_Video_Installation.html");
+            }
+        );
+    </script>
+</body>
+
+</html>
