@@ -1,2 +1,2 @@
-# nevgithub0823.github.io
-My personal website.
+# riptideiv.github.io
+My github website
