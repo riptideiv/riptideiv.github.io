@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Membean Optimizer — Xingrui Chen</title>
+    <meta name="description" content="Calculate the minimum effort plan to meet your Membean weekly requirements.">
+    <link rel="icon" href="/pages/img/icon.png" type="image/x-icon">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div id="topbar"></div>
+    <div class="page">
+        <a class="back-link" href="/">← Back to home</a>
+
+        <h1>Membean Optimizer</h1>
+        <p>
+            Enter your current progress for the week and this tool will tell you the
+            minimum number of correct/incorrect answers needed to satisfy all Membean
+            requirements.
+        </p>
+
+        <h2>Weekly requirements</h2>
+        <ul>
+            <li>Total time &ge; 55 minutes</li>
+            <li>At least 3 days with 15+ minutes</li>
+            <li>Accuracy (correct &divide; total), rounded to nearest %, &ge; 60%</li>
+            <li>1 correct answer = 0.3 min &nbsp;|&nbsp; 1 incorrect answer = 5.3 min</li>
+        </ul>
+
+        <h2>Your current progress</h2>
+        <div class="calc-form">
+            <label>
+                Correct answers so far
+                <input type="number" id="inp-correct" min="0" value="0">
+            </label>
+            <label>
+                Total answers so far
+                <input type="number" id="inp-total" min="0" value="0">
+            </label>
+            <label>
+                Minutes completed so far
+                <input type="number" id="inp-minutes" min="0" step="0.1" value="0">
+            </label>
+            <label>
+                Days with 15+ minutes so far
+                <input type="number" id="inp-days" min="0" max="7" value="0">
+            </label>
+            <button onclick="calculate()">Calculate</button>
+        </div>
+
+        <div id="result">
+            <h3>Optimal Plan</h3>
+            <p id="result-intro"></p>
+            <table id="result-table"></table>
+            <p id="result-days" style="margin-top:12px;font-size:14px;color:#555;"></p>
+            <p id="result-error" style="color:#c0392b;font-size:14px;display:none;"></p>
+        </div>
+    </div>
+
+    <script>
+        // ── Mirrors the Python optimizer logic ─────────────────────────────────
+
+        // Round half-up to nearest integer (matches Python's ROUND_HALF_UP on Decimal)
+        function roundHalfUp(x) {
+            return Math.floor(x + 0.5);
+        }
+
+        function calculate() {
+            const currentCorrect  = parseInt(document.getElementById('inp-correct').value)  || 0;
+            const currentTotal    = parseInt(document.getElementById('inp-total').value)    || 0;
+            const currentMinutes  = parseFloat(document.getElementById('inp-minutes').value) || 0;
+            const currentDays15   = parseInt(document.getElementById('inp-days').value)    || 0;
+
+            const resultBox   = document.getElementById('result');
+            const resultIntro = document.getElementById('result-intro');
+            const resultTable = document.getElementById('result-table');
+            const resultDays  = document.getElementById('result-days');
+            const resultError = document.getElementById('result-error');
+
+            resultBox.style.display = 'block';
+            resultError.style.display = 'none';
+            resultIntro.textContent = '';
+            resultTable.innerHTML = '';
+            resultDays.textContent = '';
+
+            // Validate
+            if (currentTotal < currentCorrect) {
+                resultError.textContent = 'Total answers cannot be less than correct answers.';
+                resultError.style.display = 'block';
+                return;
+            }
+
+            // Minutes needed
+            const remainingDaysNeeded = Math.max(0, 3 - currentDays15);
+            const minForDays          = remainingDaysNeeded * 15.0;
+            const minForTotal         = Math.max(0.0, 55.0 - currentMinutes);
+            const neededNewMinutes    = Math.max(minForTotal, minForDays);
+
+            // Search cap: 500 each (covers any realistic scenario in < 1ms)
+            const CAP = 500;
+            let bestC = null, bestI = null, bestMins = 0;
+
+            for (let c = 0; c <= CAP; c++) {
+                for (let i = 0; i <= CAP; i++) {
+                    const newMins = c * 0.3 + i * 5.3;
+                    if (newMins < neededNewMinutes) continue;
+
+                    const totalCorrect  = currentCorrect + c;
+                    const totalAnswers  = currentTotal + c + i;
+                    if (totalAnswers === 0) continue;
+
+                    const pct        = (totalCorrect / totalAnswers) * 100;
+                    const roundedPct = roundHalfUp(pct);
+
+                    if (roundedPct >= 60) {
+                        if (bestC === null || c < bestC || (c === bestC && i < bestI)) {
+                            bestC    = c;
+                            bestI    = i;
+                            bestMins = newMins;
+                        }
+                    }
+                }
+                // Early-exit inner loop once we found a better c isn't possible
+                if (bestC !== null && c > bestC) break;
+            }
+
+            if (bestC === null) {
+                resultError.textContent =
+                    'Could not find a viable plan within reasonable limits. ' +
+                    'Check your inputs (e.g. accuracy may already be too low to recover).';
+                resultError.style.display = 'block';
+                return;
+            }
+
+            const newTotalCorrect = currentCorrect + bestC;
+            const newTotal        = currentTotal + bestC + bestI;
+            const finalAcc        = (newTotalCorrect / newTotal) * 100;
+            const finalMins       = currentMinutes + bestMins;
+
+            resultIntro.textContent =
+                'To reach your goal with minimum effort:';
+
+            const rows = [
+                ['Correct answers to get',   `${bestC}`],
+                ['Incorrect answers to get',  `${bestI}`],
+                ['Time this will add',         `${bestMins.toFixed(1)} min`],
+                ['Final total time',           `${finalMins.toFixed(1)} min`],
+                ['Final accuracy',             `${finalAcc.toFixed(2)}% (rounds to ${roundHalfUp(finalAcc)}%)`],
+            ];
+
+            resultTable.innerHTML = rows
+                .map(([label, val]) => `<tr><td>${label}</td><td>${val}</td></tr>`)
+                .join('');
+
+            if (remainingDaysNeeded > 0) {
+                resultDays.textContent =
+                    `⚠ You still need ${remainingDaysNeeded} more day(s) with at least 15 minutes ` +
+                    `— spread the above answers across separate sessions.`;
+            } else {
+                resultDays.textContent =
+                    `✓ You already have enough qualifying days.`;
+            }
+        }
+    </script>
+
+    <script>
+        // Load nav bar
+        fetch('/pages/top-bar.html')
+            .then(r => r.text())
+            .then(html => {
+                const tmp = document.createElement('div');
+                tmp.innerHTML = html;
+                const nav = tmp.querySelector('nav');
+                if (nav) document.getElementById('topbar').appendChild(nav);
+            });
+    </script>
+</body>
+</html>

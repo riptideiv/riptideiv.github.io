@@ -1,28 +1,45 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Xingrui Chen</title>
+    <meta name="description" content="Personal website of Xingrui Chen — interests, projects, and tools.">
     <link rel="icon" href="pages/img/icon.png" type="image/x-icon">
-    <title>Xingrui Chen's Website</title>
-    <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-    </style>
+    <link rel="stylesheet" href="/style.css">
 </head>
-
 <body>
     <div id="topbar"></div>
-    <h1>placeholder</h1>
+    <div class="page">
+        <h1>Hi, I'm Xingrui 👋</h1>
+        <p style="color:#555;">Rising college freshman &mdash; currently a high school senior</p>
+
+        <h2>About</h2>
+        <p>
+            I'm interested in <strong>vocaloid</strong>, <strong>osu!</strong>, and <strong>AI automation</strong>.
+            I'm also currently learning Japanese (日本語勉強中！).
+        </p>
+
+        <h2>Tools</h2>
+        <p>Small utilities I've built for myself.</p>
+        <div class="tool-list">
+            <a class="tool-card" href="/tools/membean.html">
+                <span class="tool-name">Membean Optimizer</span>
+                <span class="tool-desc">Calculates the minimum effort plan to meet weekly Membean requirements.</span>
+            </a>
+        </div>
+    </div>
+
     <script>
-        $(
-            function () {
-                $("#topbar").load("https://nevgithub0823.github.io/pages/top-bar.html");
-            }
-        )
+        // Load nav bar from local file
+        fetch('/pages/top-bar.html')
+            .then(r => r.text())
+            .then(html => {
+                const tmp = document.createElement('div');
+                tmp.innerHTML = html;
+                const nav = tmp.querySelector('nav');
+                if (nav) document.getElementById('topbar').appendChild(nav);
+            });
     </script>
 </body>
-
 </html>
