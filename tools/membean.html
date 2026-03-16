@@ -7,6 +7,72 @@
     <meta name="description" content="Calculate the minimum effort plan to meet your Membean weekly requirements.">
     <link rel="icon" href="/pages/img/icon.png" type="image/x-icon">
     <link rel="stylesheet" href="/style.css">
+    <style>
+        /* ── Daily breakdown cards ───────────────────────────────────────── */
+        #day-breakdown {
+            margin-top: 24px;
+            max-width: 460px;
+        }
+
+        #day-breakdown h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1a5276;
+            margin-bottom: 10px;
+        }
+
+        .day-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .day-card {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 12px 16px;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .day-label {
+            font-weight: 600;
+            font-size: 14px;
+            color: #1a5276;
+            white-space: nowrap;
+        }
+
+        .day-stats {
+            font-size: 13px;
+            color: #444;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 14px;
+        }
+
+        .day-stats span { white-space: nowrap; }
+
+        .day-acc-badge {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+
+        .badge-ok   { background: #d5f5e3; color: #1e8449; }
+        .badge-warn { background: #fdebd0; color: #a04000; }
+
+        .day-fraction {
+            font-size: 15px;
+            font-weight: 700;
+            color: #222;
+            white-space: nowrap;
+        }
+    </style>
 </head>
 <body>
     <div id="topbar"></div>
@@ -24,7 +90,8 @@
         <ul>
             <li>Total time &ge; 55 minutes</li>
             <li>At least 3 days with 15+ minutes</li>
-            <li>Accuracy (correct &divide; total), rounded to nearest %, &ge; 60%</li>
+            <li>Overall accuracy (correct &divide; total), rounded to nearest %, &ge; 60%</li>
+            <li>Each day&rsquo;s accuracy, rounded to nearest %, &ge; 50%</li>
             <li>1 correct answer = 0.3 min &nbsp;|&nbsp; 1 incorrect answer = 5.3 min</li>
         </ul>
 
@@ -49,6 +116,7 @@
             <button onclick="calculate()">Calculate</button>
         </div>
 
+        <!-- Summary result box -->
         <div id="result">
             <h3>Optimal Plan</h3>
             <p id="result-intro"></p>
@@ -56,58 +124,128 @@
             <p id="result-days" style="margin-top:12px;font-size:14px;color:#555;"></p>
             <p id="result-error" style="color:#c0392b;font-size:14px;display:none;"></p>
         </div>
+
+        <!-- Daily breakdown -->
+        <div id="day-breakdown" style="display:none;">
+            <h3>Daily Breakdown</h3>
+            <div class="day-cards" id="day-cards"></div>
+        </div>
     </div>
 
     <script>
-        // ── Mirrors the Python optimizer logic ─────────────────────────────────
+        // ── Mirrors optimizer.py — keep in sync if the Python logic changes ────
 
-        // Round half-up to nearest integer (matches Python's ROUND_HALF_UP on Decimal)
+        const CORRECT_MINS = 0.3;
+        const WRONG_MINS   = 5.3;
+
         function roundHalfUp(x) {
             return Math.floor(x + 0.5);
         }
 
-        function calculate() {
-            const currentCorrect  = parseInt(document.getElementById('inp-correct').value)  || 0;
-            const currentTotal    = parseInt(document.getElementById('inp-total').value)    || 0;
-            const currentMinutes  = parseFloat(document.getElementById('inp-minutes').value) || 0;
-            const currentDays15   = parseInt(document.getElementById('inp-days').value)    || 0;
+        function dayAccOk(c, i) {
+            const total = c + i;
+            if (total === 0) return false;
+            return roundHalfUp((c / total) * 100) >= 50;
+        }
 
-            const resultBox   = document.getElementById('result');
-            const resultIntro = document.getElementById('result-intro');
-            const resultTable = document.getElementById('result-table');
-            const resultDays  = document.getElementById('result-days');
-            const resultError = document.getElementById('result-error');
+        function dayMins(c, i) {
+            return c * CORRECT_MINS + i * WRONG_MINS;
+        }
 
-            resultBox.style.display = 'block';
-            resultError.style.display = 'none';
-            resultIntro.textContent = '';
-            resultTable.innerHTML = '';
-            resultDays.textContent = '';
+        /** Minimum correct answers for a single 15-min day with `wrongCount` wrongs. */
+        function minCorrectFor15MinDay(wrongCount) {
+            const minsFromWrong = wrongCount * WRONG_MINS;
+            let c = Math.max(
+                0,
+                Math.ceil((15.0 - minsFromWrong) / CORRECT_MINS)
+            );
+            // Also enforce >=50% accuracy
+            while (!dayAccOk(c, wrongCount)) c++;
+            return c;
+        }
+
+        /**
+         * Decompose (totalC, totalI) into daysNeeded days where every day has
+         * >=15 min and >=50% accuracy.
+         * Returns array of {c, i} objects, or null if infeasible.
+         */
+        function buildDailySchedule(totalC, totalI, daysNeeded) {
+            if (daysNeeded === 0) return [];
+
+            const baseI  = Math.floor(totalI / daysNeeded);
+            const extraI = totalI % daysNeeded;   // extra wrongs on last day
+
+            const days = [];
+            for (let d = 0; d < daysNeeded; d++) {
+                const dayI   = baseI + (d === daysNeeded - 1 ? extraI : 0);
+                const cMin   = minCorrectFor15MinDay(dayI);
+                days.push({ cMin, i: dayI });
+            }
+
+            const minCNeeded = days.reduce((s, d) => s + d.cMin, 0);
+            if (minCNeeded > totalC) return null;
+
+            const leftoverC = totalC - minCNeeded;
+            const schedule  = days.map((d, idx) => ({
+                c: d.cMin + (idx === daysNeeded - 1 ? leftoverC : 0),
+                i: d.i
+            }));
 
             // Validate
+            for (const { c, i } of schedule) {
+                if (dayMins(c, i) < 15.0) return null;
+                if (!dayAccOk(c, i))      return null;
+            }
+
+            return schedule;
+        }
+
+        // ── Main calculate function ────────────────────────────────────────────
+
+        function calculate() {
+            const currentCorrect  = parseInt(document.getElementById('inp-correct').value)   || 0;
+            const currentTotal    = parseInt(document.getElementById('inp-total').value)      || 0;
+            const currentMinutes  = parseFloat(document.getElementById('inp-minutes').value)  || 0;
+            const currentDays15   = parseInt(document.getElementById('inp-days').value)       || 0;
+
+            const resultBox       = document.getElementById('result');
+            const resultIntro     = document.getElementById('result-intro');
+            const resultTable     = document.getElementById('result-table');
+            const resultDays      = document.getElementById('result-days');
+            const resultError     = document.getElementById('result-error');
+            const dayBreakdown    = document.getElementById('day-breakdown');
+            const dayCards        = document.getElementById('day-cards');
+
+            // Reset
+            resultBox.style.display    = 'block';
+            dayBreakdown.style.display = 'none';
+            resultError.style.display  = 'none';
+            resultIntro.textContent    = '';
+            resultTable.innerHTML      = '';
+            resultDays.textContent     = '';
+            dayCards.innerHTML         = '';
+
             if (currentTotal < currentCorrect) {
                 resultError.textContent = 'Total answers cannot be less than correct answers.';
                 resultError.style.display = 'block';
                 return;
             }
 
-            // Minutes needed
             const remainingDaysNeeded = Math.max(0, 3 - currentDays15);
             const minForDays          = remainingDaysNeeded * 15.0;
             const minForTotal         = Math.max(0.0, 55.0 - currentMinutes);
             const neededNewMinutes    = Math.max(minForTotal, minForDays);
 
-            // Search cap: 500 each (covers any realistic scenario in < 1ms)
             const CAP = 500;
             let bestC = null, bestI = null, bestMins = 0;
 
             for (let c = 0; c <= CAP; c++) {
                 for (let i = 0; i <= CAP; i++) {
-                    const newMins = c * 0.3 + i * 5.3;
+                    const newMins = c * CORRECT_MINS + i * WRONG_MINS;
                     if (newMins < neededNewMinutes) continue;
 
-                    const totalCorrect  = currentCorrect + c;
-                    const totalAnswers  = currentTotal + c + i;
+                    const totalCorrect = currentCorrect + c;
+                    const totalAnswers = currentTotal + c + i;
                     if (totalAnswers === 0) continue;
 
                     const pct        = (totalCorrect / totalAnswers) * 100;
@@ -121,7 +259,6 @@
                         }
                     }
                 }
-                // Early-exit inner loop once we found a better c isn't possible
                 if (bestC !== null && c > bestC) break;
             }
 
@@ -138,15 +275,14 @@
             const finalAcc        = (newTotalCorrect / newTotal) * 100;
             const finalMins       = currentMinutes + bestMins;
 
-            resultIntro.textContent =
-                'To reach your goal with minimum effort:';
+            resultIntro.textContent = 'To reach your goal with minimum effort:';
 
             const rows = [
-                ['Correct answers to get',   `${bestC}`],
-                ['Incorrect answers to get',  `${bestI}`],
-                ['Time this will add',         `${bestMins.toFixed(1)} min`],
-                ['Final total time',           `${finalMins.toFixed(1)} min`],
-                ['Final accuracy',             `${finalAcc.toFixed(2)}% (rounds to ${roundHalfUp(finalAcc)}%)`],
+                ['Correct answers to get',    `${bestC}`],
+                ['Incorrect answers to get',   `${bestI}`],
+                ['Time this will add',          `${bestMins.toFixed(1)} min`],
+                ['Final total time',            `${finalMins.toFixed(1)} min`],
+                ['Final accuracy',              `${finalAcc.toFixed(2)}% (rounds to ${roundHalfUp(finalAcc)}%)`],
             ];
 
             resultTable.innerHTML = rows
@@ -155,11 +291,50 @@
 
             if (remainingDaysNeeded > 0) {
                 resultDays.textContent =
-                    `⚠ You still need ${remainingDaysNeeded} more day(s) with at least 15 minutes ` +
-                    `— spread the above answers across separate sessions.`;
+                    `Distribute across ${remainingDaysNeeded} more day(s) with at least 15 minutes each (see breakdown below).`;
             } else {
-                resultDays.textContent =
-                    `✓ You already have enough qualifying days.`;
+                resultDays.textContent = `✓ You already have enough qualifying days.`;
+            }
+
+            // ── Daily breakdown ──────────────────────────────────────────────
+            if (remainingDaysNeeded > 0) {
+                const schedule = buildDailySchedule(bestC, bestI, remainingDaysNeeded);
+
+                if (schedule) {
+                    dayBreakdown.style.display = 'block';
+                    schedule.forEach((day, idx) => {
+                        const dayNum  = currentDays15 + idx + 1;
+                        const total   = day.c + day.i;
+                        const acc     = roundHalfUp((day.c / total) * 100);
+                        const mins    = dayMins(day.c, day.i);
+                        const isWarn  = acc < 55;   // close to the 50% limit
+
+                        const card = document.createElement('div');
+                        card.className = 'day-card';
+                        card.innerHTML = `
+                            <div class="day-label">Day ${dayNum}</div>
+                            <div class="day-stats">
+                                <span>✓ ${day.c} correct</span>
+                                <span>✗ ${day.i} incorrect</span>
+                                <span>⏱ ${mins.toFixed(1)} min</span>
+                            </div>
+                            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                                <span class="day-fraction">${day.c}/${total}</span>
+                                <span class="day-acc-badge ${isWarn ? 'badge-warn' : 'badge-ok'}">${acc}%</span>
+                            </div>
+                        `;
+                        dayCards.appendChild(card);
+                    });
+                } else {
+                    // Fallback — show a note if decomposition failed
+                    dayBreakdown.style.display = 'block';
+                    dayCards.innerHTML =
+                        `<p style="font-size:14px;color:#888;">
+                            Could not compute a clean daily split. Manually spread
+                            ${bestC} correct / ${bestI} incorrect across ${remainingDaysNeeded} days,
+                            keeping each day &ge; 15 min and &ge; 50% accuracy.
+                        </p>`;
+                }
             }
         }
     </script>
