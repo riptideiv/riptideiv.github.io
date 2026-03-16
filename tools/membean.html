@@ -92,7 +92,7 @@
             <li>At least 3 days with 15+ minutes</li>
             <li>Overall accuracy (correct &divide; total), rounded to nearest %, &ge; 60%</li>
             <li>Each day&rsquo;s accuracy, rounded to nearest %, &ge; 50%</li>
-            <li>1 correct answer = 0.3 min &nbsp;|&nbsp; 1 incorrect answer = 5.3 min</li>
+            <li>Time per answer is configurable below (defaults: 0.1 min correct, 5.3 min incorrect)</li>
         </ul>
 
         <h2>Your current progress</h2>
@@ -112,6 +112,20 @@
             <label>
                 Days with 15+ minutes so far
                 <input type="number" id="inp-days" min="0" max="7" value="0">
+            </label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+                <label style="margin-bottom:0;">
+                    Minutes per correct answer
+                    <input type="number" id="inp-correct-mins" min="0" step="0.05" value="0.1">
+                </label>
+                <label style="margin-bottom:0;">
+                    Minutes per incorrect answer
+                    <input type="number" id="inp-wrong-mins" min="0" step="0.05" value="5.3">
+                </label>
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:16px;">
+                <input type="checkbox" id="inp-strict" style="width:15px;height:15px;cursor:pointer;accent-color:#1a5276;">
+                <span>Require &ge;60% accuracy per day <span style="color:#888;font-size:12px;">(instead of &ge;50%)</span></span>
             </label>
             <button onclick="calculate()">Calculate</button>
         </div>
@@ -135,32 +149,29 @@
     <script>
         // ── Mirrors optimizer.py — keep in sync if the Python logic changes ────
 
-        const CORRECT_MINS = 0.3;
-        const WRONG_MINS   = 5.3;
-
         function roundHalfUp(x) {
             return Math.floor(x + 0.5);
         }
 
-        function dayAccOk(c, i) {
+        function dayAccOk(c, i, minPct) {
             const total = c + i;
             if (total === 0) return false;
-            return roundHalfUp((c / total) * 100) >= 50;
+            return roundHalfUp((c / total) * 100) >= minPct;
         }
 
-        function dayMins(c, i) {
-            return c * CORRECT_MINS + i * WRONG_MINS;
+        function dayMins(c, i, correctMins, wrongMins) {
+            return c * correctMins + i * wrongMins;
         }
 
         /** Minimum correct answers for a single 15-min day with `wrongCount` wrongs. */
-        function minCorrectFor15MinDay(wrongCount) {
-            const minsFromWrong = wrongCount * WRONG_MINS;
+        function minCorrectFor15MinDay(wrongCount, minDayPct, correctMins, wrongMins) {
+            const minsFromWrong = wrongCount * wrongMins;
             let c = Math.max(
                 0,
-                Math.ceil((15.0 - minsFromWrong) / CORRECT_MINS)
+                correctMins > 0 ? Math.ceil((15.0 - minsFromWrong) / correctMins) : 0
             );
-            // Also enforce >=50% accuracy
-            while (!dayAccOk(c, wrongCount)) c++;
+            // Also enforce >= minDayPct accuracy
+            while (!dayAccOk(c, wrongCount, minDayPct)) c++;
             return c;
         }
 
@@ -169,7 +180,7 @@
          * >=15 min and >=50% accuracy.
          * Returns array of {c, i} objects, or null if infeasible.
          */
-        function buildDailySchedule(totalC, totalI, daysNeeded) {
+        function buildDailySchedule(totalC, totalI, daysNeeded, minDayPct, correctMins, wrongMins) {
             if (daysNeeded === 0) return [];
 
             const baseI  = Math.floor(totalI / daysNeeded);
@@ -178,7 +189,7 @@
             const days = [];
             for (let d = 0; d < daysNeeded; d++) {
                 const dayI   = baseI + (d === daysNeeded - 1 ? extraI : 0);
-                const cMin   = minCorrectFor15MinDay(dayI);
+                const cMin   = minCorrectFor15MinDay(dayI, minDayPct, correctMins, wrongMins);
                 days.push({ cMin, i: dayI });
             }
 
@@ -193,8 +204,8 @@
 
             // Validate
             for (const { c, i } of schedule) {
-                if (dayMins(c, i) < 15.0) return null;
-                if (!dayAccOk(c, i))      return null;
+                if (dayMins(c, i, correctMins, wrongMins) < 15.0) return null;
+                if (!dayAccOk(c, i, minDayPct))                   return null;
             }
 
             return schedule;
@@ -207,6 +218,10 @@
             const currentTotal    = parseInt(document.getElementById('inp-total').value)      || 0;
             const currentMinutes  = parseFloat(document.getElementById('inp-minutes').value)  || 0;
             const currentDays15   = parseInt(document.getElementById('inp-days').value)       || 0;
+            const correctMins     = parseFloat(document.getElementById('inp-correct-mins').value) || 0;
+            const wrongMins       = parseFloat(document.getElementById('inp-wrong-mins').value)   || 0;
+            const strictMode      = document.getElementById('inp-strict').checked;
+            const minDayPct       = strictMode ? 60 : 50;
 
             const resultBox       = document.getElementById('result');
             const resultIntro     = document.getElementById('result-intro');
@@ -241,7 +256,7 @@
 
             for (let c = 0; c <= CAP; c++) {
                 for (let i = 0; i <= CAP; i++) {
-                    const newMins = c * CORRECT_MINS + i * WRONG_MINS;
+                    const newMins = c * correctMins + i * wrongMins;
                     if (newMins < neededNewMinutes) continue;
 
                     const totalCorrect = currentCorrect + c;
@@ -298,7 +313,38 @@
 
             // ── Daily breakdown ──────────────────────────────────────────────
             if (remainingDaysNeeded > 0) {
-                const schedule = buildDailySchedule(bestC, bestI, remainingDaysNeeded);
+                // In strict mode the weekly-minimum plan may not split cleanly into
+                // days that each meet minDayPct. Bump correct answers one at a time
+                // (weekly accuracy stays ≥60% because we're adding more corrects)
+                // until a valid daily split is found.
+                let schedC = bestC, schedI = bestI;
+                let schedule = buildDailySchedule(schedC, schedI, remainingDaysNeeded, minDayPct, correctMins, wrongMins);
+                const BUMP_CAP = 50;
+                let bumps = 0;
+                while (!schedule && bumps < BUMP_CAP) {
+                    schedC++;
+                    bumps++;
+                    schedule = buildDailySchedule(schedC, schedI, remainingDaysNeeded, minDayPct, correctMins, wrongMins);
+                }
+
+                // If we bumped, update the summary rows to reflect the adjusted totals
+                if (bumps > 0 && schedule) {
+                    const adjTotalCorrect = currentCorrect + schedC;
+                    const adjTotal        = currentTotal + schedC + schedI;
+                    const adjMins         = schedC * correctMins + schedI * wrongMins;
+                    const adjAcc          = (adjTotalCorrect / adjTotal) * 100;
+                    const adjFinalMins    = currentMinutes + adjMins;
+                    const adjRows = [
+                        ['Correct answers to get',    `${schedC} <span style="color:#888;font-size:12px;">(+${bumps} for daily accuracy)</span>`],
+                        ['Incorrect answers to get',   `${schedI}`],
+                        ['Time this will add',          `${adjMins.toFixed(1)} min`],
+                        ['Final total time',            `${adjFinalMins.toFixed(1)} min`],
+                        ['Final accuracy',              `${adjAcc.toFixed(2)}% (rounds to ${roundHalfUp(adjAcc)}%)`],
+                    ];
+                    resultTable.innerHTML = adjRows
+                        .map(([label, val]) => `<tr><td>${label}</td><td>${val}</td></tr>`)
+                        .join('');
+                }
 
                 if (schedule) {
                     dayBreakdown.style.display = 'block';
@@ -306,8 +352,8 @@
                         const dayNum  = currentDays15 + idx + 1;
                         const total   = day.c + day.i;
                         const acc     = roundHalfUp((day.c / total) * 100);
-                        const mins    = dayMins(day.c, day.i);
-                        const isWarn  = acc < 55;   // close to the 50% limit
+                        const mins    = dayMins(day.c, day.i, correctMins, wrongMins);
+                        const isWarn  = acc < minDayPct + 5;   // within 5pp of the floor
 
                         const card = document.createElement('div');
                         card.className = 'day-card';
@@ -332,7 +378,7 @@
                         `<p style="font-size:14px;color:#888;">
                             Could not compute a clean daily split. Manually spread
                             ${bestC} correct / ${bestI} incorrect across ${remainingDaysNeeded} days,
-                            keeping each day &ge; 15 min and &ge; 50% accuracy.
+                            keeping each day &ge; 15 min and &ge; ${minDayPct}% accuracy.
                         </p>`;
                 }
             }
