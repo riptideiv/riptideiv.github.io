@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BOM-to-Cart — Xingrui Chen</title>
+    <meta name="description"
+        content="Chrome extension that parses BOMs, searches Octopart pricing, and finds the cheapest shopping plan.">
+    <link rel="icon" href="/pages/img/icon.png" type="image/x-icon">
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+    <div id="topbar"></div>
+    <div class="page">
+        <a class="back-link" href="/">← Back to home</a>
+
+        <div class="project-hero">
+            <span class="eyebrow">Chrome Extension</span>
+            <h1>BOM-to-Cart</h1>
+            <p>
+                Parse any BOM, search real-time Octopart pricing, and compute the cheapest purchasing plan.
+                The AI agent handles the thinking; the extension handles the clicking.
+            </p>
+            <div class="project-meta">
+                <span class="meta-pill">OpenRouter-powered agent</span>
+                <span class="meta-pill">Octopart search workflow</span>
+                <span class="meta-pill">Top 5 optimized plans</span>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <h2>What it does</h2>
+            <ol>
+                <li><strong>Parse</strong> any BOM pasted as markdown, CSV, or plain text into a normalized table.</li>
+                <li><strong>Search</strong> Octopart across distributors like DigiKey, Mouser, Newark, Arrow, and more.
+                </li>
+                <li><strong>Optimize</strong> the part list into the cheapest shopping plan while balancing parts cost
+                    and shipping.</li>
+            </ol>
+        </div>
+
+        <div class="section-card">
+            <h2>Example output</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Platforms</th>
+                        <th>Parts Cost</th>
+                        <th>Shipping</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>AliExpress</td>
+                        <td>$16.24</td>
+                        <td>$10.00</td>
+                        <td><strong>$26.24</strong></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>AliExpress + DigiKey</td>
+                        <td>$16.24</td>
+                        <td>$20.00</td>
+                        <td>$36.24</td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>DigiKey + Mouser</td>
+                        <td>$20.56</td>
+                        <td>$20.00</td>
+                        <td>$40.56</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section-card">
+            <h2>Architecture</h2>
+            <pre>Chrome Extension (Popup Dashboard)
+  ├─ BOM table
+  ├─ Best plans
+  └─ Search console
+        │
+        ├─ Background service worker
+        │    └─ OpenRouter API agent
+        │
+        └─ Content scripts
+             └─ Octopart.com interactions</pre>
+            <p>
+                The agent calls OpenRouter directly, so there is no Hermes gateway dependency.
+                Each invocation is short-lived and stateless.
+            </p>
+        </div>
+
+        <div class="section-card">
+            <h2>Installation</h2>
+            <ol>
+                <li>Clone the repo or download the <code>extension/</code> directory.</li>
+                <li>Open <code>chrome://extensions/</code> and enable Developer mode.</li>
+                <li>Click Load unpacked and select the <code>extension/</code> folder.</li>
+                <li>Open Options and set your OpenRouter API key.</li>
+                <li>Click the extension icon to open the dashboard.</li>
+            </ol>
+        </div>
+
+        <div class="section-card">
+            <h2>Limitations</h2>
+            <ul>
+                <li>Octopart CAPTCHA interrupts automated search after a handful of parts.</li>
+                <li>Generic parts like screws, nuts, and wire may not be indexed.</li>
+                <li>Shipping defaults to $10 per platform unless you override it in the optimizer.</li>
+            </ul>
+        </div>
+
+        <div class="section-card">
+            <h2>Related</h2>
+            <ul>
+                <li><a href="https://octopart.com" target="_blank" rel="noreferrer">Octopart</a></li>
+                <li><a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer">OpenRouter API keys</a></li>
+                <li><a href="https://github.com/riptideiv" target="_blank" rel="noreferrer">@riptideiv on GitHub</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        fetch('/pages/top-bar.html')
+            .then(r => r.text())
+            .then(html => {
+                const tmp = document.createElement('div');
+                tmp.innerHTML = html;
+                const nav = tmp.querySelector('nav');
+                if (nav) document.getElementById('topbar').appendChild(nav);
+            });
+    </script>
+</body>
+
+</html>
