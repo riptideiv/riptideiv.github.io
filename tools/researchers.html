@@ -5,28 +5,61 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Researcher Connections — Xingrui Chen</title>
-    <meta name="description" content="Find the shortest connection path between any two researchers via co-authorship, citations, and shared institutions.">
+    <meta name="description"
+        content="Find the shortest connection path between any two researchers via co-authorship, citations, and shared institutions.">
     <link rel="icon" href="/pages/img/icon.png" type="image/x-icon">
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
         /* ── Nav bar (matches global style.css) ─────────────────────────────── */
         #topbar {
             position: fixed;
-            top: 0; left: 0; right: 0;
+            top: 0;
+            left: 0;
+            right: 0;
             z-index: 100;
             background: #1a1a2e;
             border-bottom: 2px solid #16213e;
             height: 48px;
         }
+
         nav {
-            display: flex; align-items: center;
-            height: 48px; max-width: 900px;
-            margin: 0 auto; padding: 0 16px; gap: 8px;
+            display: flex;
+            align-items: center;
+            height: 48px;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 16px;
+            gap: 8px;
         }
-        nav .site-title { font-weight: 600; color: #e0e0e0; font-size: 15px; margin-right: auto; white-space: nowrap; }
-        nav a { color: #c0c0d0; font-size: 14px; padding: 6px 10px; border-radius: 4px; transition: background 0.15s, color 0.15s; text-decoration: none; }
-        nav a:hover { background: #2a2a4a; color: #fff; }
+
+        nav .site-title {
+            font-weight: 600;
+            color: #e0e0e0;
+            font-size: 15px;
+            margin-right: auto;
+            white-space: nowrap;
+        }
+
+        nav a {
+            color: #c0c0d0;
+            font-size: 14px;
+            padding: 6px 10px;
+            border-radius: 4px;
+            transition: background 0.15s, color 0.15s;
+            text-decoration: none;
+        }
+
+        nav a:hover {
+            background: #2a2a4a;
+            color: #fff;
+        }
 
         /* ── App styles ──────────────────────────────────────────────────────── */
         body {
@@ -39,101 +72,281 @@
             padding: 72px 1rem 2rem;
         }
 
-        main { width: 100%; max-width: 800px; }
-
-        header { text-align: center; margin-bottom: 2.5rem; }
-        h1 { font-size: 1.8rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; }
-        .subtitle { color: #888; font-size: 0.95rem; }
-
-        .search-row { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.5rem; }
-        .researcher-field { flex: 1; }
-        .researcher-field label {
-            display: block; font-size: 0.8rem; text-transform: uppercase;
-            letter-spacing: 0.05em; color: #888; margin-bottom: 0.4rem;
+        main {
+            width: 100%;
+            max-width: 800px;
         }
-        .connector { padding-top: 2.2rem; color: #555; font-size: 1.2rem; }
 
-        .autocomplete { position: relative; }
+        header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 0.95rem;
+        }
+
+        .search-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .researcher-field {
+            flex: 1;
+        }
+
+        .researcher-field label {
+            display: block;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #888;
+            margin-bottom: 0.4rem;
+        }
+
+        .connector {
+            padding-top: 2.2rem;
+            color: #555;
+            font-size: 1.2rem;
+        }
+
+        .autocomplete {
+            position: relative;
+        }
 
         input[type="text"] {
-            width: 100%; padding: 0.6rem 0.8rem;
-            background: #1e2130; border: 1px solid #333; border-radius: 6px;
-            color: #e0e0e0; font-size: 0.95rem; outline: none; transition: border-color 0.2s;
+            width: 100%;
+            padding: 0.6rem 0.8rem;
+            background: #1e2130;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
         }
-        input[type="text"]:focus { border-color: #4a9eff; }
+
+        input[type="text"]:focus {
+            border-color: #4a9eff;
+        }
 
         .dropdown {
-            position: absolute; top: calc(100% + 4px); left: 0; right: 0;
-            background: #1e2130; border: 1px solid #333; border-radius: 6px;
-            list-style: none; z-index: 100; overflow: hidden;
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background: #1e2130;
+            border: 1px solid #333;
+            border-radius: 6px;
+            list-style: none;
+            z-index: 100;
+            overflow: hidden;
         }
-        .dropdown:empty { display: none; }
-        .dropdown li { padding: 0.6rem 0.8rem; cursor: pointer; transition: background 0.15s; }
-        .dropdown li:hover { background: #2a2f45; }
-        .dropdown .author-name { font-weight: 600; font-size: 0.9rem; }
-        .dropdown .author-meta { font-size: 0.78rem; color: #888; margin-top: 0.1rem; }
+
+        .dropdown:empty {
+            display: none;
+        }
+
+        .dropdown li {
+            padding: 0.6rem 0.8rem;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .dropdown li:hover {
+            background: #2a2f45;
+        }
+
+        .dropdown .author-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .dropdown .author-meta {
+            font-size: 0.78rem;
+            color: #888;
+            margin-top: 0.1rem;
+        }
 
         .selected-badge {
-            margin-top: 0.4rem; padding: 0.35rem 0.6rem;
-            background: #1a3a5c; border: 1px solid #2a5a8a; border-radius: 4px;
-            font-size: 0.82rem; color: #7ab8f5;
+            margin-top: 0.4rem;
+            padding: 0.35rem 0.6rem;
+            background: #1a3a5c;
+            border: 1px solid #2a5a8a;
+            border-radius: 4px;
+            font-size: 0.82rem;
+            color: #7ab8f5;
         }
 
         .edge-toggles {
-            display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
             flex-wrap: wrap;
         }
+
         .edge-toggles-label {
-            font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #888;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #888;
         }
+
         .edge-toggle {
-            display: flex; align-items: center; gap: 0.35rem;
-            font-size: 0.9rem; color: #ccc; cursor: pointer; user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.9rem;
+            color: #ccc;
+            cursor: pointer;
+            user-select: none;
         }
-        .edge-toggle input[type="checkbox"] { accent-color: #4a9eff; cursor: pointer; }
+
+        .edge-toggle input[type="checkbox"] {
+            accent-color: #4a9eff;
+            cursor: pointer;
+        }
 
         button {
-            display: block; width: 100%; padding: 0.75rem;
-            background: #4a9eff; color: #fff; border: none; border-radius: 6px;
-            font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s, opacity 0.2s;
+            display: block;
+            width: 100%;
+            padding: 0.75rem;
+            background: #4a9eff;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, opacity 0.2s;
         }
-        button:disabled { opacity: 0.4; cursor: not-allowed; }
-        button:not(:disabled):hover { background: #3a8eef; }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        button:not(:disabled):hover {
+            background: #3a8eef;
+        }
 
         #progress-area {
-            margin-top: 1.5rem; background: #1e2130; border: 1px solid #333;
-            border-radius: 8px; padding: 1rem; font-family: monospace; font-size: 0.85rem;
-            color: #aaa; max-height: 200px; overflow-y: auto;
+            margin-top: 1.5rem;
+            background: #1e2130;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #aaa;
+            max-height: 200px;
+            overflow-y: auto;
         }
-        .progress-line { padding: 0.15rem 0; }
 
-        #result-area { margin-top: 1.5rem; }
+        .progress-line {
+            padding: 0.15rem 0;
+        }
+
+        #result-area {
+            margin-top: 1.5rem;
+        }
+
         .chain {
-            background: #1e2130; border: 1px solid #333;
-            border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem;
+            background: #1e2130;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
         }
-        .chain-node { display: flex; flex-direction: column; align-items: flex-start; }
-        .chain-author { font-weight: 700; font-size: 1.05rem; color: #fff; text-decoration: none; }
-        .chain-author:hover { color: #4a9eff; text-decoration: underline; }
+
+        .chain-node {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .chain-author {
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .chain-author:hover {
+            color: #4a9eff;
+            text-decoration: underline;
+        }
+
         .chain-connection {
-            display: flex; align-items: center; gap: 0.5rem;
-            margin: 0.4rem 0; padding-left: 0.5rem; color: #888; font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0.4rem 0;
+            padding-left: 0.5rem;
+            color: #888;
+            font-size: 0.85rem;
         }
-        .chain-arrow { color: #4a9eff; font-size: 1.1rem; }
-        .chain-label { font-style: italic; color: #666; }
-        .chain-label a { color: #7ab8f5; text-decoration: none; }
-        .chain-label a:hover { text-decoration: underline; }
 
-        #reset-btn { background: #2a2f45; color: #aaa; font-weight: 400; }
-        #reset-btn:not(:disabled):hover { background: #343a55; color: #e0e0e0; }
+        .chain-arrow {
+            color: #4a9eff;
+            font-size: 1.1rem;
+        }
 
-        .chain-hop-label { color: #888; font-size: 0.85rem; margin-top: 0.5rem; text-align: center; }
+        .chain-label {
+            font-style: italic;
+            color: #666;
+        }
+
+        .chain-label a {
+            color: #7ab8f5;
+            text-decoration: none;
+        }
+
+        .chain-label a:hover {
+            text-decoration: underline;
+        }
+
+        #reset-btn {
+            background: #2a2f45;
+            color: #aaa;
+            font-weight: 400;
+        }
+
+        #reset-btn:not(:disabled):hover {
+            background: #343a55;
+            color: #e0e0e0;
+        }
+
+        .chain-hop-label {
+            color: #888;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
 
         .error-message {
-            color: #ff6b6b; background: #2a1a1a; border: 1px solid #553333;
-            border-radius: 6px; padding: 0.75rem 1rem; margin-top: 1rem;
+            color: #ff6b6b;
+            background: #2a1a1a;
+            border: 1px solid #553333;
+            border-radius: 6px;
+            padding: 0.75rem 1rem;
+            margin-top: 1rem;
         }
-        .hidden { display: none !important; }
+
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 
@@ -152,7 +365,8 @@
     <main>
         <header>
             <h1>Researcher Connections</h1>
-            <p class="subtitle">Find how any two researchers are connected through co-authorship, citations, and institutions</p>
+            <p class="subtitle">Find how any two researchers are connected through co-authorship, citations, and
+                institutions</p>
         </header>
 
         <section id="search-form">
@@ -179,7 +393,8 @@
                 <span class="edge-toggles-label">Edge types</span>
                 <label class="edge-toggle"><input type="checkbox" id="edge-coauthor" checked> Co-authorship</label>
                 <label class="edge-toggle"><input type="checkbox" id="edge-citation" checked> Citations</label>
-                <label class="edge-toggle"><input type="checkbox" id="edge-institution" checked> Shared institution</label>
+                <label class="edge-toggle"><input type="checkbox" id="edge-institution" checked> Shared
+                    institution</label>
             </div>
             <button id="find-btn" disabled>Find Connection</button>
         </section>
@@ -194,7 +409,7 @@
         </section>
     </main>
 
-    <script>window.RESEARCHER_API_BASE = 'https://researchers-degree-of-separation.onrender.com';</script>
+    <script>window.RESEARCHER_API_BASE = 'https://academic-degree-of-separation.onrender.com';</script>
     <script src="/tools/researchers.js"></script>
 
     <script>
