@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -53,7 +54,9 @@
             gap: 6px 14px;
         }
 
-        .day-stats span { white-space: nowrap; }
+        .day-stats span {
+            white-space: nowrap;
+        }
 
         .day-acc-badge {
             font-size: 12px;
@@ -63,8 +66,15 @@
             white-space: nowrap;
         }
 
-        .badge-ok   { background: #d5f5e3; color: #1e8449; }
-        .badge-warn { background: #fdebd0; color: #a04000; }
+        .badge-ok {
+            background: #d5f5e3;
+            color: #1e8449;
+        }
+
+        .badge-warn {
+            background: #fdebd0;
+            color: #a04000;
+        }
 
         .day-fraction {
             font-size: 15px;
@@ -74,6 +84,17 @@
         }
     </style>
 </head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KLB1BYEHEQ"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-KLB1BYEHEQ');
+</script>
+
 <body>
     <div id="topbar"></div>
     <div class="page">
@@ -124,8 +145,10 @@
                 </label>
             </div>
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:16px;">
-                <input type="checkbox" id="inp-strict" style="width:15px;height:15px;cursor:pointer;accent-color:#1a5276;">
-                <span>Require &ge;60% accuracy per day <span style="color:#888;font-size:12px;">(instead of &ge;50%)</span></span>
+                <input type="checkbox" id="inp-strict"
+                    style="width:15px;height:15px;cursor:pointer;accent-color:#1a5276;">
+                <span>Require &ge;60% accuracy per day <span style="color:#888;font-size:12px;">(instead of
+                        &ge;50%)</span></span>
             </label>
             <button onclick="calculate()">Calculate</button>
         </div>
@@ -183,13 +206,13 @@
         function buildDailySchedule(totalC, totalI, daysNeeded, minDayPct, correctMins, wrongMins) {
             if (daysNeeded === 0) return [];
 
-            const baseI  = Math.floor(totalI / daysNeeded);
+            const baseI = Math.floor(totalI / daysNeeded);
             const extraI = totalI % daysNeeded;   // extra wrongs on last day
 
             const days = [];
             for (let d = 0; d < daysNeeded; d++) {
-                const dayI   = baseI + (d === daysNeeded - 1 ? extraI : 0);
-                const cMin   = minCorrectFor15MinDay(dayI, minDayPct, correctMins, wrongMins);
+                const dayI = baseI + (d === daysNeeded - 1 ? extraI : 0);
+                const cMin = minCorrectFor15MinDay(dayI, minDayPct, correctMins, wrongMins);
                 days.push({ cMin, i: dayI });
             }
 
@@ -197,7 +220,7 @@
             if (minCNeeded > totalC) return null;
 
             const leftoverC = totalC - minCNeeded;
-            const schedule  = days.map((d, idx) => ({
+            const schedule = days.map((d, idx) => ({
                 c: d.cMin + (idx === daysNeeded - 1 ? leftoverC : 0),
                 i: d.i
             }));
@@ -205,7 +228,7 @@
             // Validate
             for (const { c, i } of schedule) {
                 if (dayMins(c, i, correctMins, wrongMins) < 15.0) return null;
-                if (!dayAccOk(c, i, minDayPct))                   return null;
+                if (!dayAccOk(c, i, minDayPct)) return null;
             }
 
             return schedule;
@@ -214,31 +237,31 @@
         // ── Main calculate function ────────────────────────────────────────────
 
         function calculate() {
-            const currentCorrect  = parseInt(document.getElementById('inp-correct').value)   || 0;
-            const currentTotal    = parseInt(document.getElementById('inp-total').value)      || 0;
-            const currentMinutes  = parseFloat(document.getElementById('inp-minutes').value)  || 0;
-            const currentDays15   = parseInt(document.getElementById('inp-days').value)       || 0;
-            const correctMins     = parseFloat(document.getElementById('inp-correct-mins').value) || 0;
-            const wrongMins       = parseFloat(document.getElementById('inp-wrong-mins').value)   || 0;
-            const strictMode      = document.getElementById('inp-strict').checked;
-            const minDayPct       = strictMode ? 60 : 50;
+            const currentCorrect = parseInt(document.getElementById('inp-correct').value) || 0;
+            const currentTotal = parseInt(document.getElementById('inp-total').value) || 0;
+            const currentMinutes = parseFloat(document.getElementById('inp-minutes').value) || 0;
+            const currentDays15 = parseInt(document.getElementById('inp-days').value) || 0;
+            const correctMins = parseFloat(document.getElementById('inp-correct-mins').value) || 0;
+            const wrongMins = parseFloat(document.getElementById('inp-wrong-mins').value) || 0;
+            const strictMode = document.getElementById('inp-strict').checked;
+            const minDayPct = strictMode ? 60 : 50;
 
-            const resultBox       = document.getElementById('result');
-            const resultIntro     = document.getElementById('result-intro');
-            const resultTable     = document.getElementById('result-table');
-            const resultDays      = document.getElementById('result-days');
-            const resultError     = document.getElementById('result-error');
-            const dayBreakdown    = document.getElementById('day-breakdown');
-            const dayCards        = document.getElementById('day-cards');
+            const resultBox = document.getElementById('result');
+            const resultIntro = document.getElementById('result-intro');
+            const resultTable = document.getElementById('result-table');
+            const resultDays = document.getElementById('result-days');
+            const resultError = document.getElementById('result-error');
+            const dayBreakdown = document.getElementById('day-breakdown');
+            const dayCards = document.getElementById('day-cards');
 
             // Reset
-            resultBox.style.display    = 'block';
+            resultBox.style.display = 'block';
             dayBreakdown.style.display = 'none';
-            resultError.style.display  = 'none';
-            resultIntro.textContent    = '';
-            resultTable.innerHTML      = '';
-            resultDays.textContent     = '';
-            dayCards.innerHTML         = '';
+            resultError.style.display = 'none';
+            resultIntro.textContent = '';
+            resultTable.innerHTML = '';
+            resultDays.textContent = '';
+            dayCards.innerHTML = '';
 
             if (currentTotal < currentCorrect) {
                 resultError.textContent = 'Total answers cannot be less than correct answers.';
@@ -247,9 +270,9 @@
             }
 
             const remainingDaysNeeded = Math.max(0, 3 - currentDays15);
-            const minForDays          = remainingDaysNeeded * 15.0;
-            const minForTotal         = Math.max(0.0, 55.0 - currentMinutes);
-            const neededNewMinutes    = Math.max(minForTotal, minForDays);
+            const minForDays = remainingDaysNeeded * 15.0;
+            const minForTotal = Math.max(0.0, 55.0 - currentMinutes);
+            const neededNewMinutes = Math.max(minForTotal, minForDays);
 
             const CAP = 500;
             let bestC = null, bestI = null, bestMins = 0;
@@ -263,13 +286,13 @@
                     const totalAnswers = currentTotal + c + i;
                     if (totalAnswers === 0) continue;
 
-                    const pct        = (totalCorrect / totalAnswers) * 100;
+                    const pct = (totalCorrect / totalAnswers) * 100;
                     const roundedPct = roundHalfUp(pct);
 
                     if (roundedPct >= 60) {
                         if (bestC === null || c < bestC || (c === bestC && i < bestI)) {
-                            bestC    = c;
-                            bestI    = i;
+                            bestC = c;
+                            bestI = i;
                             bestMins = newMins;
                         }
                     }
@@ -286,18 +309,18 @@
             }
 
             const newTotalCorrect = currentCorrect + bestC;
-            const newTotal        = currentTotal + bestC + bestI;
-            const finalAcc        = (newTotalCorrect / newTotal) * 100;
-            const finalMins       = currentMinutes + bestMins;
+            const newTotal = currentTotal + bestC + bestI;
+            const finalAcc = (newTotalCorrect / newTotal) * 100;
+            const finalMins = currentMinutes + bestMins;
 
             resultIntro.textContent = 'To reach your goal with minimum effort:';
 
             const rows = [
-                ['Correct answers to get',    `${bestC}`],
-                ['Incorrect answers to get',   `${bestI}`],
-                ['Time this will add',          `${bestMins.toFixed(1)} min`],
-                ['Final total time',            `${finalMins.toFixed(1)} min`],
-                ['Final accuracy',              `${finalAcc.toFixed(2)}% (rounds to ${roundHalfUp(finalAcc)}%)`],
+                ['Correct answers to get', `${bestC}`],
+                ['Incorrect answers to get', `${bestI}`],
+                ['Time this will add', `${bestMins.toFixed(1)} min`],
+                ['Final total time', `${finalMins.toFixed(1)} min`],
+                ['Final accuracy', `${finalAcc.toFixed(2)}% (rounds to ${roundHalfUp(finalAcc)}%)`],
             ];
 
             resultTable.innerHTML = rows
@@ -330,16 +353,16 @@
                 // If we bumped, update the summary rows to reflect the adjusted totals
                 if (bumps > 0 && schedule) {
                     const adjTotalCorrect = currentCorrect + schedC;
-                    const adjTotal        = currentTotal + schedC + schedI;
-                    const adjMins         = schedC * correctMins + schedI * wrongMins;
-                    const adjAcc          = (adjTotalCorrect / adjTotal) * 100;
-                    const adjFinalMins    = currentMinutes + adjMins;
+                    const adjTotal = currentTotal + schedC + schedI;
+                    const adjMins = schedC * correctMins + schedI * wrongMins;
+                    const adjAcc = (adjTotalCorrect / adjTotal) * 100;
+                    const adjFinalMins = currentMinutes + adjMins;
                     const adjRows = [
-                        ['Correct answers to get',    `${schedC} <span style="color:#888;font-size:12px;">(+${bumps} for daily accuracy)</span>`],
-                        ['Incorrect answers to get',   `${schedI}`],
-                        ['Time this will add',          `${adjMins.toFixed(1)} min`],
-                        ['Final total time',            `${adjFinalMins.toFixed(1)} min`],
-                        ['Final accuracy',              `${adjAcc.toFixed(2)}% (rounds to ${roundHalfUp(adjAcc)}%)`],
+                        ['Correct answers to get', `${schedC} <span style="color:#888;font-size:12px;">(+${bumps} for daily accuracy)</span>`],
+                        ['Incorrect answers to get', `${schedI}`],
+                        ['Time this will add', `${adjMins.toFixed(1)} min`],
+                        ['Final total time', `${adjFinalMins.toFixed(1)} min`],
+                        ['Final accuracy', `${adjAcc.toFixed(2)}% (rounds to ${roundHalfUp(adjAcc)}%)`],
                     ];
                     resultTable.innerHTML = adjRows
                         .map(([label, val]) => `<tr><td>${label}</td><td>${val}</td></tr>`)
@@ -349,11 +372,11 @@
                 if (schedule) {
                     dayBreakdown.style.display = 'block';
                     schedule.forEach((day, idx) => {
-                        const dayNum  = currentDays15 + idx + 1;
-                        const total   = day.c + day.i;
-                        const acc     = roundHalfUp((day.c / total) * 100);
-                        const mins    = dayMins(day.c, day.i, correctMins, wrongMins);
-                        const isWarn  = acc < minDayPct + 5;   // within 5pp of the floor
+                        const dayNum = currentDays15 + idx + 1;
+                        const total = day.c + day.i;
+                        const acc = roundHalfUp((day.c / total) * 100);
+                        const mins = dayMins(day.c, day.i, correctMins, wrongMins);
+                        const isWarn = acc < minDayPct + 5;   // within 5pp of the floor
 
                         const card = document.createElement('div');
                         card.className = 'day-card';
@@ -397,4 +420,5 @@
             });
     </script>
 </body>
+
 </html>
