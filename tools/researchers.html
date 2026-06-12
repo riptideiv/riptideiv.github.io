@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Researcher Connections — Xingrui Chen</title>
+    <title>researcher connections — riptideiv</title>
     <meta name="description"
         content="Find the shortest connection path between any two researchers via co-authorship, citations, and shared institutions.">
     <link rel="icon" href="/pages/img/icon.png" type="image/x-icon">
@@ -55,7 +55,7 @@
         }
 
         input[type="text"]:focus {
-            border-color: #1a5276;
+            border-color: #222;
         }
 
         .dropdown {
@@ -84,7 +84,7 @@
         }
 
         .dropdown li:hover {
-            background: #eaf2f8;
+            background: #f5f5f5;
         }
 
         .dropdown .author-name {
@@ -102,11 +102,11 @@
         .selected-badge {
             margin-top: 0.4rem;
             padding: 0.35rem 0.6rem;
-            background: #eaf2f8;
-            border: 1px solid #d4e1eb;
+            background: #f0f0f0;
+            border: 1px solid #e0e0e0;
             border-radius: 4px;
             font-size: 0.82rem;
-            color: #1a5276;
+            color: #333;
         }
 
         /* ── Edge toggles ────────────────────────────────────────────────── */
@@ -136,7 +136,7 @@
         }
 
         .edge-toggle input[type="checkbox"] {
-            accent-color: #1a5276;
+            accent-color: #222;
             cursor: pointer;
         }
 
@@ -145,7 +145,7 @@
             display: block;
             width: 100%;
             padding: 0.7rem;
-            background: #1a5276;
+            background: #222;
             color: #fff;
             border: none;
             border-radius: 4px;
@@ -161,7 +161,7 @@
         }
 
         #find-btn:not(:disabled):hover {
-            background: #154360;
+            background: #333;
         }
 
         #reset-btn {
@@ -223,12 +223,12 @@
         .chain-author {
             font-weight: 700;
             font-size: 1.05rem;
-            color: #1a5276;
+            color: #222;
             text-decoration: none;
         }
 
         .chain-author:visited {
-            color: #1a5276;
+            color: #222;
         }
 
         .chain-author:hover {
@@ -246,7 +246,7 @@
         }
 
         .chain-arrow {
-            color: #1a5276;
+            color: #222;
             font-size: 1.1rem;
         }
 
@@ -318,9 +318,11 @@
                 <span class="edge-toggles-label">Edge types</span>
                 <label class="edge-toggle"><input type="checkbox" id="edge-coauthor" checked> Co-authorship</label>
                 <label class="edge-toggle"><input type="checkbox" id="edge-citation" checked> Citations</label>
-                <label class="edge-toggle"><input type="checkbox" id="edge-institution" checked> Shared institution</label>
+                <label class="edge-toggle"><input type="checkbox" id="edge-institution" checked> Shared
+                    institution</label>
             </div>
             <button id="find-btn" disabled>Find Connection</button>
+            <div><i>created with help from smart guy at duke kunshan: https://github.com/bruce-wen</i></div>
         </section>
 
         <section id="progress-area" class="hidden">
